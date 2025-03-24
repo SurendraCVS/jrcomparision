@@ -4,6 +4,12 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 
+# Specific node_modules cache directories
+node_modules/.cache/
+node_modules/.cache/default-development/
+**/*.pack
+**/*.pack.old
+
 # Build outputs
 /build
 /dist
