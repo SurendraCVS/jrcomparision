@@ -30,6 +30,8 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [removedFromCompareIds, setRemovedFromCompareIds] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
     dateRange: { start: null, end: null },
@@ -292,15 +294,31 @@ const App = () => {
   };
 
   const handleSelectFilesForComparison = (selectedFileIds) => {
-    // Verify we have at least 2 files selected
-    if (selectedFileIds.length >= 2) {
-      // Switch to compare view
-      setActiveSection('compare');
-      // Set active tab to statistics by default
-      setActiveTab('statistics');
-    } else {
-      toast.warn('Please select at least 2 files for comparison');
-    }
+    // Append the new selected file IDs to the existing ones instead of replacing them
+    setSelectedFileIds(prevIds => {
+      // Create a Set from the previous IDs to avoid duplicates
+      const uniqueIds = new Set([...prevIds]);
+      
+      // Add each new ID if it's not already in the set
+      selectedFileIds.forEach(id => {
+        uniqueIds.add(id);
+      });
+      
+      // Convert the Set back to an array
+      return Array.from(uniqueIds);
+    });
+    
+    // Switch to compare view
+    setActiveSection('compare');
+    // Set active tab to statistics by default
+    setActiveTab('statistics');
+  };
+
+  const handleRemoveFromCompare = (fileId) => {
+    // Add this file ID to the list of removed files
+    setRemovedFromCompareIds(prev => [...prev, fileId]);
+    // Also remove it from selected files if it's selected
+    setSelectedFileIds(prev => prev.filter(id => id !== fileId));
   };
 
   const handleSaveSettings = (newSettings) => {
@@ -388,6 +406,9 @@ const App = () => {
             onUploadFiles={handleUploadFiles}
             onViewFile={handleOpenFile}
             onRedirectToHistory={() => setActiveSection('history')}
+            initialSelectedFiles={selectedFileIds}
+            removedFromCompareIds={removedFromCompareIds}
+            onRemoveFromCompare={handleRemoveFromCompare}
           />
         </>
       );
@@ -482,12 +503,24 @@ const App = () => {
 
   // Add a function to handle opening a single file
   const handleOpenFile = (fileId) => {
+    console.log("handleOpenFile called with fileId:", fileId);
     const file = files.find(f => f.id === fileId);
+    
     if (file && file.processedData) {
+      console.log("File found, setting processed data and navigating to fileView");
+      // Set the processed data for visualization
       setProcessedData(file.processedData.visualizationData);
-      setActiveSection('fileView'); // New section for viewing a file
-      setActiveTab('statistics'); // Default tab
-      setActiveView('graph'); // Default view
+      // Navigate to the file view section
+      setActiveSection('fileView'); 
+      // Set default views
+      setActiveTab('statistics');
+      setActiveView('graph');
+      
+      // Show a success message
+      toast.success(`Viewing file: ${file.name}`);
+    } else {
+      console.error("File not found or has no processed data:", file);
+      toast.error("Could not load file data. The file may be corrupted.");
     }
   };
   

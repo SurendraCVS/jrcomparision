@@ -37,9 +37,12 @@ ChartJS.register(
   Legend
 );
 
-const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirectToHistory }) => {
+const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirectToHistory, initialSelectedFiles = [], removedFromCompareIds = [], onRemoveFromCompare }) => {
   // State for selected files
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState(
+    // Filter out any files that have been previously removed
+    initialSelectedFiles.filter(id => !removedFromCompareIds.includes(id))
+  );
   // State for storing JMeter versions
   const [jmeterVersions, setJmeterVersions] = useState({});
   // State for difference display mode (absolute, percentage, hybrid)
@@ -53,6 +56,9 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
     'average', 'median', 'percentile95', 'throughput', 'errorPercentage'
   ]);
 
+  // State for files shown in the comparison section
+  const [localFiles, setLocalFiles] = useState([]);
+
   // Effect to extract JMeter versions when files change
   useEffect(() => {
     const versions = {};
@@ -64,29 +70,70 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
     setJmeterVersions(versions);
   }, [files]);
 
-  // Effect to initialize selected files when files change
+  // Initialize localFiles with initialSelectedFiles on component mount
   useEffect(() => {
-    if (files.length >= 2 && selectedFiles.length < 2) {
-      setSelectedFiles([files[0].id, files[1].id]);
-    } else if (files.length === 1 && selectedFiles.length === 0) {
-      // If we have only one file, select it
-      setSelectedFiles([files[0].id]);
+    if (initialSelectedFiles.length > 0) {
+      // Get unique file objects by filtering out duplicates based on ID
+      // Also filter out any files that have been removed from comparison
+      const initialFileObjects = files.filter(file => 
+        initialSelectedFiles.includes(file.id) && 
+        !removedFromCompareIds.includes(file.id)
+      );
+      
+      // Create a map to track which file IDs we've already added
+      const addedFileIds = new Set();
+      const uniqueFiles = [];
+      
+      // Only add each file once based on its ID
+      initialFileObjects.forEach(file => {
+        if (!addedFileIds.has(file.id)) {
+          addedFileIds.add(file.id);
+          uniqueFiles.push(file);
+        }
+      });
+      
+      if (uniqueFiles.length > 0) {
+        setLocalFiles(uniqueFiles);
+      }
     }
-  }, [files, selectedFiles]);
+  }, [initialSelectedFiles, files, removedFromCompareIds]);
 
-  // Toggle file selection
+  // Effect to update localFiles when selectedFiles changes
+  useEffect(() => {
+    // Update localFiles whenever selectedFiles changes
+    // Get the file objects for any newly selected files
+    const newSelectedFiles = selectedFiles.filter(id => 
+      !localFiles.some(file => file.id === id)
+    );
+    
+    if (newSelectedFiles.length > 0) {
+      // Get the file objects for the newly selected files
+      const newFileObjects = files.filter(file => 
+        newSelectedFiles.includes(file.id)
+      );
+      
+      // Create a map to ensure we're not adding duplicates
+      const existingFileIds = new Set(localFiles.map(file => file.id));
+      const uniqueNewFiles = newFileObjects.filter(file => !existingFileIds.has(file.id));
+      
+      if (uniqueNewFiles.length > 0) {
+        setLocalFiles(prevFiles => [...prevFiles, ...uniqueNewFiles]);
+      }
+    }
+  }, [files, selectedFiles, localFiles]);
+
+  // Toggle file selection - modified to prevent duplicate selection
   const toggleFileSelection = (fileId) => {
     if (selectedFiles.includes(fileId)) {
-      // Only remove if we have more than 1 file selected
-      if (selectedFiles.length > 1) {
-        setSelectedFiles(selectedFiles.filter(id => id !== fileId));
-      }
+      // Remove the file if it's already selected
+      setSelectedFiles(prevSelected => prevSelected.filter(id => id !== fileId));
     } else {
-      // Only keep the most recent 2 selections
-      if (selectedFiles.length >= 2) {
-        setSelectedFiles([selectedFiles[1], fileId]);
+      // Add the file if we have less than 5 files selected
+      if (selectedFiles.length < 5) {
+        setSelectedFiles(prevSelected => [...prevSelected, fileId]);
       } else {
-        setSelectedFiles([...selectedFiles, fileId]);
+        // If we already have 5 files, show a toast message
+        toast.info('Maximum of 5 files can be selected for comparison');
       }
     }
   };
@@ -241,11 +288,23 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
 
   // Render the file selector component
   const renderFileSelector = () => {
+    // Ensure we only render unique files by ID
+    const uniqueFileIds = new Set();
+    const uniqueLocalFiles = localFiles.filter(file => {
+      // Only keep the file if we haven't seen its ID before
+      const isDuplicate = uniqueFileIds.has(file.id);
+      if (!isDuplicate) {
+        uniqueFileIds.add(file.id);
+        return true;
+      }
+      return false;
+    });
+
     return (
       <FileSelectorContainer>
         <SectionTitle>Select Files to Compare</SectionTitle>
         <FileList>
-          {files.map(file => (
+          {uniqueLocalFiles.map(file => (
             <FileItem 
               key={file.id} 
               selected={selectedFiles.includes(file.id)}
@@ -268,44 +327,33 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
                 >
                   <FaFileAlt />
                 </FileItemAction>
-                {/* Only show the remove button for non-selected files */}
-                {!selectedFiles.includes(file.id) && (
-                  <FileItemAction 
-                    title="Remove" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile(file.id);
-                    }}
-                  >
-                    <FaTimes />
-                  </FileItemAction>
-                )}
+                <FileItemAction 
+                  title="Remove" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFile(file.id);
+                  }}
+                >
+                  <FaTimes />
+                </FileItemAction>
               </FileItemActions>
             </FileItem>
           ))}
-          {files.length < 1 && (
+          {uniqueLocalFiles.length < 1 && (
             <EmptyState>
-              <p>Upload at least one JMeter file to compare</p>
+              <p>No files in comparison view. Go to File History to select files for comparison.</p>
             </EmptyState>
           )}
         </FileList>
         
         <UploadButtonContainer>
-          {selectedFiles.length === 1 && (
-            <SingleCompareButton onClick={() => {
-              // Continue with a single file comparison
-              // Already selected, so no need to do anything else
-            }}>
-              <FaExchangeAlt /> Compare Single File
-            </SingleCompareButton>
-          )}
           <UploadButton onClick={() => {
             // This will redirect to the history section
             if (onRedirectToHistory) {
               onRedirectToHistory();
             }
           }}>
-            <FaPlus /> Upload New Files
+            <FaPlus /> Select Files from History
           </UploadButton>
         </UploadButtonContainer>
       </FileSelectorContainer>
@@ -391,14 +439,22 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
       );
     }
 
-    // Original code for two file comparison
+    // Multi-file comparison (2-5 files)
+    const fileColumnWidth = Math.floor((80 / selectedData.length));
+    const hasDiffColumn = selectedData.length === 2;
+    const diffColumnWidth = hasDiffColumn ? 20 : 0;
+    const endpointColumnWidth = 100 - (fileColumnWidth * selectedData.length) - diffColumnWidth;
+
     return (
       <ComparisonTableContainer>
         <TableHeader>
-          <TableHeaderCell width="35%">Endpoint / Metric</TableHeaderCell>
-          <TableHeaderCell width="20%">{selectedData[0].name}</TableHeaderCell>
-          <TableHeaderCell width="20%">{selectedData[1].name}</TableHeaderCell>
-          <TableHeaderCell width="25%">Difference</TableHeaderCell>
+          <TableHeaderCell width={`${endpointColumnWidth}%`}>Endpoint / Metric</TableHeaderCell>
+          {selectedData.map(file => (
+            <TableHeaderCell key={file.id} width={`${fileColumnWidth}%`}>
+              {file.name}
+            </TableHeaderCell>
+          ))}
+          {hasDiffColumn && <TableHeaderCell width="20%">Difference</TableHeaderCell>}
         </TableHeader>
 
         <TableBody>
@@ -409,27 +465,42 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
                   {expandedEndpoints[endpoint] ? <FaChevronDown /> : <FaChevronRight />}
                   {endpoint}
                 </EndpointCell>
-                <EndpointCell>{selectedData[0].statistics?.byLabel?.[endpoint] ? 'Available' : 'N/A'}</EndpointCell>
-                <EndpointCell>{selectedData[1].statistics?.byLabel?.[endpoint] ? 'Available' : 'N/A'}</EndpointCell>
-                <EndpointCell></EndpointCell>
+                {selectedData.map(file => (
+                  <EndpointCell key={file.id}>
+                    {file.statistics?.byLabel?.[endpoint] ? 'Available' : 'N/A'}
+                  </EndpointCell>
+                ))}
+                {hasDiffColumn && <EndpointCell></EndpointCell>}
               </EndpointRow>
 
               {expandedEndpoints[endpoint] && comparisonMetrics.map(metric => {
-                const stats1 = selectedData[0].statistics?.byLabel?.[endpoint] || {};
-                const stats2 = selectedData[1].statistics?.byLabel?.[endpoint] || {};
-                const val1 = stats1[metric];
-                const val2 = stats2[metric];
-                const diff = calculateDifference(val1 || 0, val2 || 0, diffMode);
-                const diffClass = getDiffClass(diff);
-
                 return (
                   <MetricRow key={`${endpoint}-${metric}`}>
                     <MetricCell>{getMetricLabel(metric)}</MetricCell>
-                    <ValueCell>{formatMetricValue(val1, metric)}</ValueCell>
-                    <ValueCell>{formatMetricValue(val2, metric)}</ValueCell>
-                    <DiffCell className={diffClass}>
-                      {diff.displayValue}
-                    </DiffCell>
+                    {selectedData.map(file => {
+                      const stats = file.statistics?.byLabel?.[endpoint] || {};
+                      const val = stats[metric];
+                      return (
+                        <ValueCell key={file.id}>
+                          {formatMetricValue(val, metric)}
+                        </ValueCell>
+                      );
+                    })}
+                    
+                    {hasDiffColumn && (() => {
+                      const stats1 = selectedData[0].statistics?.byLabel?.[endpoint] || {};
+                      const stats2 = selectedData[1].statistics?.byLabel?.[endpoint] || {};
+                      const val1 = stats1[metric];
+                      const val2 = stats2[metric];
+                      const diff = calculateDifference(val1 || 0, val2 || 0, diffMode);
+                      const diffClass = getDiffClass(diff);
+                      
+                      return (
+                        <DiffCell className={diffClass}>
+                          {diff.displayValue}
+                        </DiffCell>
+                      );
+                    })()}
                   </MetricRow>
                 );
               })}
@@ -678,9 +749,23 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
 
   // Helper to get a color for a file based on its ID
   const getFileColor = (fileId) => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-    const index = selectedFiles.indexOf(fileId) % colors.length;
-    return colors[index];
+    // Updated color palette for up to 5 files
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#f59e0b', // amber
+      '#ef4444', // red
+      '#8b5cf6'  // purple
+    ];
+    
+    // If we have 5 or fewer files, assign each a unique color
+    const index = selectedFiles.indexOf(fileId);
+    if (index >= 0 && index < colors.length) {
+      return colors[index];
+    }
+    
+    // Fallback - use modulo to cycle through colors if we somehow have more than 5 files
+    return colors[index % colors.length];
   };
 
   // Helper function to get the unit for a metric
@@ -707,15 +792,30 @@ const JMeterCompare = ({ files, activeView, onUploadFiles, onViewFile, onRedirec
 
   // Add the handleViewFile and handleRemoveFile functions
   const handleViewFile = (fileId) => {
-    // Handle redirecting to view the file (this will be called from parent component)
+    // Handle redirecting to view the file
     if (onViewFile) {
+      // Call onViewFile with the fileId to open the file
       onViewFile(fileId);
+      // Log that we're trying to view a file
+      console.log("Attempting to view file with ID:", fileId);
+    } else {
+      console.error("onViewFile prop is not provided to JMeterCompare component");
     }
   };
 
   const handleRemoveFile = (fileId) => {
-    // Remove the file from the selected files (not from history)
-    setSelectedFiles(selectedFiles.filter(id => id !== fileId));
+    // Remove the file from the local file list (not from history)
+    setLocalFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
+    
+    // If the file was selected, also remove it from selectedFiles
+    if (selectedFiles.includes(fileId)) {
+      setSelectedFiles(prevSelected => prevSelected.filter(id => id !== fileId));
+    }
+    
+    // Notify the parent component that this file has been removed from comparison
+    if (onRemoveFromCompare) {
+      onRemoveFromCompare(fileId);
+    }
   };
 
   return (
@@ -1071,31 +1171,6 @@ const UploadButton = styled.button`
   
   &:hover {
     background-color: var(--primary-dark);
-  }
-  
-  svg {
-    font-size: 0.75rem;
-  }
-`;
-
-const SingleCompareButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: var(--secondary-color, #475569);
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  flex: 1;
-  
-  &:hover {
-    background-color: var(--text-color, #1e293b);
   }
   
   svg {

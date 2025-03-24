@@ -122,6 +122,11 @@ const FileHistory = ({ files, onSelectFiles, onDeleteFile, onUploadFiles, onOpen
     }
   };
 
+  // Add a handler for moving a single file to compare section
+  const handleMoveToCompare = (fileId) => {
+    onSelectFiles([fileId]);
+  };
+
   return (
     <HistoryContainer>
       <HistoryHeader>
@@ -226,17 +231,35 @@ const FileHistory = ({ files, onSelectFiles, onDeleteFile, onUploadFiles, onOpen
                         title="Open" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onOpenFile && onOpenFile(file.id);
+                          if (selectedFiles.includes(file.id)) {
+                            onOpenFile && onOpenFile(file.id);
+                          }
                         }}
+                        disabled={!selectedFiles.includes(file.id)}
                       >
                         <FaFileAlt />
+                      </ActionIcon>
+                      <ActionIcon 
+                        title="Move to Compare" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedFiles.includes(file.id)) {
+                            handleMoveToCompare(file.id);
+                          }
+                        }}
+                        disabled={!selectedFiles.includes(file.id)}
+                      >
+                        <FaExchangeAlt />
                       </ActionIcon>
                       <ActionIcon 
                         title="Delete" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDeleteFile(file.id);
+                          if (selectedFiles.includes(file.id)) {
+                            onDeleteFile(file.id);
+                          }
                         }}
+                        disabled={!selectedFiles.includes(file.id)}
                       >
                         <FaTrashAlt />
                       </ActionIcon>
@@ -463,13 +486,18 @@ const ActionIcon = styled.div`
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  color: var(--text-light);
+  color: ${props => props.disabled ? 'var(--border-color)' : 'var(--text-light)'};
   border-radius: 0.25rem;
   transition: all 0.2s;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.disabled ? 0.5 : 1};
   
   &:hover {
-    background-color: var(--background-color);
-    color: ${props => props.title === 'Delete' ? 'var(--error-color)' : 'var(--primary-color)'};
+    background-color: ${props => props.disabled ? 'transparent' : 'var(--background-color)'};
+    color: ${props => {
+      if (props.disabled) return 'var(--border-color)';
+      return props.title === 'Delete' ? 'var(--error-color)' : 'var(--primary-color)';
+    }};
   }
 `;
 
