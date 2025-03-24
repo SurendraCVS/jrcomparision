@@ -386,7 +386,45 @@ const App = () => {
             files={files}
             activeView={activeView}
             onUploadFiles={handleUploadFiles}
+            onViewFile={handleOpenFile}
+            onRedirectToHistory={() => setActiveSection('history')}
           />
+        </>
+      );
+    }
+
+    if (activeSection === 'fileView') {
+      if (!processedData) {
+        return (
+          <EmptyState>
+            <EmptyStateText>
+              No data available. Select a file from File History to view.
+            </EmptyStateText>
+          </EmptyState>
+        );
+      }
+
+      return (
+        <>
+          <ViewToggleBar 
+            activeView={activeView}
+            onToggleView={toggleView}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+          {activeView === 'graph' ? (
+            <GraphVisualization 
+              data={processedData} 
+              dataType={activeTab}
+              files={files}
+            />
+          ) : (
+            <TableComparison 
+              data={processedData} 
+              files={files}
+              activeTab={activeTab}
+            />
+          )}
         </>
       );
     }

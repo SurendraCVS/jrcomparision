@@ -162,7 +162,8 @@ const FileHistory = ({ files, onSelectFiles, onDeleteFile, onUploadFiles, onOpen
 
       <FileTable>
         <FileTableHeader>
-          <HeaderCell width="40%" onClick={() => handleSort('name')}>
+          <HeaderCell width="3%"></HeaderCell>
+          <HeaderCell width="37%" onClick={() => handleSort('name')}>
             File Name {getSortIcon('name')}
           </HeaderCell>
           <HeaderCell width="15%" onClick={() => handleSort('size')}>
@@ -198,7 +199,16 @@ const FileHistory = ({ files, onSelectFiles, onDeleteFile, onUploadFiles, onOpen
                   onClick={() => toggleFileSelection(file.id)}
                   onDoubleClick={() => onOpenFile && onOpenFile(file.id)}
                 >
-                  <FileCell width="40%">
+                  <FileCell width="3%">
+                    <CheckboxContainer onClick={(e) => e.stopPropagation()}>
+                      <StyledCheckbox 
+                        type="checkbox" 
+                        checked={selectedFiles.includes(file.id)} 
+                        onChange={() => toggleFileSelection(file.id)}
+                      />
+                    </CheckboxContainer>
+                  </FileCell>
+                  <FileCell width="37%">
                     <FileIcon><FaFileAlt /></FileIcon>
                     <FileName>{file.name}</FileName>
                   </FileCell>
@@ -518,6 +528,19 @@ const EmptyState = styled.div`
   p {
     margin-bottom: 1.5rem;
   }
+`;
+
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+`;
+
+const StyledCheckbox = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 `;
 
 export default FileHistory; 

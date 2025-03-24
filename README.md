@@ -1,44 +1,28 @@
-# JMeter Comparison Tool
+# JMeter Compare Tool
 
-A modern web application for visualizing, analyzing, and comparing JMeter test results.
+A modern web application for comparing and analyzing JMeter performance test results.
 
 ## Features
 
-- **File Management**: Upload, organize, and manage JMeter (.jtl, .csv) test result files
-- **Data Visualization**: View performance metrics in both graph and table formats
-- **Test Comparison**: Compare performance metrics between different test runs
-- **JMeter Version Detection**: Automatically detect and display JMeter versions used
-- **APDEX Calculation**: Calculate Application Performance Index scores with customizable thresholds
-- **Data Persistence**: Automatic saving of files in browser local storage
-- **Export Functionality**: Export comparison data and reports
-- **Customizable Settings**: Configure visualization preferences, comparison thresholds, and more
-
-## Navigation
-
-- **Files History**: Manage all uploaded test files
-- **File View**: Visualize individual test file data in graphs or tables
-- **Compare Statistics**: Compare performance metrics across different test runs
-- **Settings**: Configure application settings and preferences
-
-## Data Views
-
-- **JTL Data**: View raw JMeter test log data
-- **Statistics**: Analyze performance statistics (response times, throughput, error rates)
-- **APDEX**: View Application Performance Index scores for endpoints
+- **File Upload**: Drag-and-drop interface for uploading JMeter result files (.jtl, .csv, .xml)
+- **Interactive Visualization**: Dynamic charts for comparing performance metrics
+- **Flexible Configuration**: Customizable comparison parameters and thresholds
+- **Filtering**: Advanced filtering options for focused analysis
+- **Report Generation**: Export capabilities in multiple formats
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
+- Node.js (v14.x or later)
+- npm (v6.x or later)
 
 ### Installation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/SurendraCVS/jrcomparision.git
-   cd jrcomparision
+   git clone https://github.com/yourusername/jmeter-compare.git
+   cd jmeter-compare
    ```
 
 2. Install dependencies:
@@ -51,14 +35,35 @@ A modern web application for visualizing, analyzing, and comparing JMeter test r
    npm start
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
 
 ## Usage
 
-1. Upload JMeter test log files (.jtl or .csv) via the Files History section
-2. Click on a file to view its data in graph or table format
-3. Select two or more files and click "Compare Selected Files" to analyze differences
-4. Configure display options using the settings menu
+1. **Upload Test Results**:
+   - Drag and drop your JMeter result files into the upload area
+   - Alternatively, click to browse and select files
+
+2. **Configure Comparison**:
+   - Select metrics to compare from the left sidebar
+   - Set time ranges and thresholds
+
+3. **Analyze Results**:
+   - Interact with the visualization area to explore data
+   - Use filters in the right sidebar to focus on specific aspects
+
+4. **Generate Reports**:
+   - Choose report format and content from the bottom panel
+   - Click "Generate Report" to export
+
+## Technical Details
+
+The application is built using:
+- React.js for the frontend UI
+- Chart.js and D3.js for data visualization
+- Node.js for the backend server
 
 ## License
 
@@ -66,6 +71,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Built with React and styled-components
-- Visualizations powered by Chart.js
-- Icons from react-icons
+- JMeter community for excellent performance testing tools
+- Open source visualization libraries that make this tool possible 

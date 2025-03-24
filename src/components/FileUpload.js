@@ -156,8 +156,8 @@ const FileUpload = ({ onFileUpload, isLoading, files = [] }) => {
     const progress = uploadProgress[file.name] || 0;
     const error = fileErrors[file.name];
     const jmeterVersion = file.processedData?.jmeterVersion || 'Unknown Version';
-    
-    const formatFileSize = (bytes) => {
+  
+  const formatFileSize = (bytes) => {
       if (bytes < 1024) return bytes + ' B';
       else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       else return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
@@ -220,7 +220,7 @@ const FileUpload = ({ onFileUpload, isLoading, files = [] }) => {
         </FileItem>
       ));
   };
-  
+
   return (
     <UploadContainer>
       <UploadHeader>
@@ -234,9 +234,9 @@ const FileUpload = ({ onFileUpload, isLoading, files = [] }) => {
         active={dragActive}
       >
         <DropZoneInner>
-          <UploadIcon>
-            <FaUpload />
-          </UploadIcon>
+        <UploadIcon>
+          <FaUpload />
+        </UploadIcon>
           <DropText>
             <strong>Click to upload</strong> or drag and drop
           </DropText>
@@ -258,13 +258,13 @@ const FileUpload = ({ onFileUpload, isLoading, files = [] }) => {
         </DropZoneInner>
       </DropZone>
       
-      <FileListContainer>
-        <FileListHeader>
+        <FileListContainer>
+          <FileListHeader>
           <FileListTitle>Uploaded Files</FileListTitle>
           <FileListInfo>{files.length} files</FileListInfo>
-        </FileListHeader>
-        
-        <FileList>
+          </FileListHeader>
+          
+          <FileList>
           {files.map(file => renderFileItem(file))}
           {renderErrorItems()}
           {files.length === 0 && Object.keys(fileErrors).length === 0 && (
@@ -272,8 +272,8 @@ const FileUpload = ({ onFileUpload, isLoading, files = [] }) => {
               <EmptyText>No files uploaded yet</EmptyText>
             </EmptyState>
           )}
-        </FileList>
-      </FileListContainer>
+          </FileList>
+        </FileListContainer>
     </UploadContainer>
   );
 };
